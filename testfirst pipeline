@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        S3_BUCKET = 'your-s3-bucket-name'
+        APP_NAME = 'my-simple-app'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code...'
+                // git url: 'https://github.com/your-repo.git'
+                echo 'Mock checkout complete'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                sh 'echo "Hello, Jenkins + AWS!" > build_output.txt'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying to AWS (simulated)...'
+                // Simulate an S3 upload
+                sh 'echo "Uploading build_output.txt to S3..."'
+                sh 'cat build_output.txt'
+                // sh "aws s3 cp build_output.txt s3://${S3_BUCKET}/builds/"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
