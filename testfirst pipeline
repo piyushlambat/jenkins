@@ -2,36 +2,71 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-west-2'
-        S3_BUCKET = 'testjenkintest'
+        // Define environment variables if needed
+        FILE_PATH = 'input.txt'
+        OUTPUT_FILE = 'output.txt'
     }
 
     stages {
-        stage('Clone') {
+        stage('Clone Repository') {
             steps {
-                git 'https://github.com/your-username/your-repo.git'  // 🔁 Replace with your repo URL
+                // Clone the repository containing your Groovy script
+                git 'https://github.com/piyushlambat/jenkins.git'
             }
         }
 
-        stage('Build') {
+        stage('Run Groovy Script') {
             steps {
-                sh 'echo "Build done by Jenkins" > build_output.txt'
+                script {
+                    // Make sure Groovy is installed on the Jenkins agent or use the Groovy Plugin
+                    def groovyScript = ''' 
+                    // fileProcessor.groovy
+                    def countWordsInFile(filePath) {
+                        def file = new File(filePath)
+                        if (file.exists()) {
+                            def content = file.text
+                            def words = content.split(/\s+/)
+                            return words.size()
+                        } else {
+                            println "File not found!"
+                            return 0
+                        }
+                    }
+
+                    def writeResultToFile(outputFilePath, wordCount) {
+                        def outputFile = new File(outputFilePath)
+                        outputFile.text = "Total number of words: ${wordCount}"
+                        println "Result written to ${outputFilePath}"
+                    }
+
+                    def inputFilePath = '${env.FILE_PATH}'
+                    def outputFilePath = '${env.OUTPUT_FILE}'
+
+                    def wordCount = countWordsInFile(inputFilePath)
+                    writeResultToFile(outputFilePath, wordCount)
+                    '''
+
+                    // Run the Groovy script using the 'groovy' command
+                    writeFile(file: 'fileProcessor.groovy', text: groovyScript)
+                    sh 'groovy fileProcessor.groovy'
+                }
             }
         }
 
-        stage('Upload to S3') {
+        stage('Archive Results') {
             steps {
-                sh 'aws s3 cp build_output.txt s3://${S3_BUCKET}/ --region ${AWS_REGION}'
+                // Archive the output file for easy retrieval
+                archiveArtifacts artifacts: '**/*.txt', allowEmptyArchive: true
             }
         }
     }
 
     post {
         success {
-            echo '✅ Successfully uploaded to S3!'
+            echo 'Groovy script executed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed.'
+            echo 'The pipeline failed.'
         }
     }
 }
